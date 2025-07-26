@@ -5,147 +5,287 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoramento Prusa MK3S+</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
-        body {
-            background-color: #f8f9fa;
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #f8f9fc;
+            --success-color: #1cc88a;
+            --danger-color: #e74a3b;
+            --warning-color: #f6c23e;
         }
+        
+        body {
+            background-color: var(--secondary-color);
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Login Screen */
         .login-container {
             max-width: 400px;
-            margin: 100px auto;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin: auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             background-color: white;
+            transform: translateY(-1rem);
+            opacity: 0;
+            animation: fadeInUp 0.5s forwards;
         }
+        
+        .password-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        
+        .toggle-password:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Status Screen */
         .status-card {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            background-color: white;
-            border-radius: 10px;
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            transition: all 0.3s;
         }
+        
+        .status-card:hover {
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.2);
+        }
+        
         .progress {
-            height: 25px;
-            margin: 10px 0;
+            height: 1.5rem;
+            border-radius: 0.3rem;
+            transition: width 0.6s ease;
         }
-        .temp-display {
-            display: flex;
-            justify-content: space-between;
-            margin: 15px 0;
+        
+        .temp-card {
+            border-radius: 0.5rem;
+            transition: transform 0.3s;
         }
+        
+        .temp-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(1rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Pulse animation for status */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Hidden class */
         .hidden {
-            display: none;
+            display: none !important;
         }
-        #loading-spinner {
-            display: none;
+        
+        /* Custom checkbox */
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
     </style>
 </head>
 <body>
     <!-- Tela de Login -->
-    <div id="login-screen">
-        <div class="login-container text-center">
-            <h2 class="mb-4">Monitoramento Prusa MK3S+</h2>
-            <div id="login-error" class="alert alert-danger hidden" role="alert"></div>
+    <div id="login-screen" class="container d-flex flex-column justify-content-center" style="height: 100vh;">
+        <div class="login-container animate__animated animate__fadeIn">
+            <div class="text-center mb-4">
+                <img src="https://www.prusa3d.com/wp-content/themes/prusa-3d/img/prusa-logo.svg" alt="Prusa Logo" style="height: 50px;" class="mb-3">
+                <h2 class="h4 text-gray-900">Monitoramento Prusa MK3S+</h2>
+            </div>
             
-            <form id="login-form">
+            <div id="login-error" class="alert alert-danger hidden animate__animated animate__headShake" role="alert"></div>
+            
+            <form id="login-form" class="user">
                 <div class="mb-3">
-                    <input type="text" id="username" class="form-control" placeholder="Usuário" required>
+                    <input type="text" id="username" class="form-control form-control-user" 
+                           placeholder="Usuário" required autocomplete="username">
                 </div>
-                <div class="mb-3">
-                    <input type="password" id="password" class="form-control" placeholder="Senha" required>
+                <div class="mb-3 password-container">
+                    <input type="password" id="password" class="form-control form-control-user" 
+                           placeholder="Senha" required autocomplete="current-password">
+                    <i class="toggle-password fas fa-eye" id="togglePassword"></i>
                 </div>
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="remember-me">
                     <label class="form-check-label" for="remember-me">Lembrar de mim</label>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-primary btn-user btn-block">
                     <span id="login-btn-text">Entrar</span>
-                    <div id="loading-spinner" class="spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Carregando...</span>
-                    </div>
+                    <span id="login-spinner" class="spinner-border spinner-border-sm hidden" role="status"></span>
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Tela de Status -->
-    <div id="status-screen" class="hidden">
-        <div class="container">
-            <div class="status-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Status da Impressora</h2>
-                    <div>
-                        <button id="refresh-btn" class="btn btn-sm btn-outline-primary">
-                            <span id="refresh-text">Atualizar</span>
-                            <span id="refresh-spinner" class="spinner-border spinner-border-sm hidden" role="status"></span>
-                        </button>
-                        <button id="logout-btn" class="btn btn-sm btn-outline-danger">Sair</button>
+    <div id="status-screen" class="container py-4 hidden animate__animated animate__fadeIn">
+        <div class="status-card bg-white p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">Status da Impressora</h1>
+                    <small id="last-update" class="text-muted"></small>
+                </div>
+                <div>
+                    <button id="refresh-btn" class="btn btn-sm btn-outline-primary mr-2">
+                        <span id="refresh-text">Atualizar</span>
+                        <span id="refresh-spinner" class="spinner-border spinner-border-sm hidden" role="status"></span>
+                    </button>
+                    <button id="logout-btn" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </div>
+            </div>
+            
+            <div id="status-message" class="hidden animate__animated animate__fadeIn">
+                <div class="alert" id="status-text"></div>
+            </div>
+            
+            <div id="printer-data" class="hidden animate__animated animate__fadeIn">
+                <div class="mb-4">
+                    <h4 class="small font-weight-bold">Progresso da Impressão <span id="progress-text" class="float-right"></span></h4>
+                    <div class="progress mb-3">
+                        <div id="progress-bar" class="progress-bar" role="progressbar"></div>
                     </div>
                 </div>
                 
-                <div id="last-update" class="text-muted mb-3"></div>
-                
-                <div id="status-message" class="hidden">
-                    <div class="alert" id="status-text"></div>
-                </div>
-                
-                <div id="printer-data" class="hidden">
-                    <div id="progress-container">
-                        <div class="progress">
-                            <div id="progress-bar" class="progress-bar" role="progressbar"></div>
-                        </div>
-                        <div class="text-center" id="progress-text"></div>
-                    </div>
-                    
-                    <div class="temp-display">
-                        <div class="card text-center" style="width: 48%">
-                            <div class="card-header">Base</div>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="temp-card card border-left-primary h-100 py-2">
                             <div class="card-body">
-                                <h3 id="bed-temp">--</h3>
-                                <span>°C</span>
-                            </div>
-                        </div>
-                        
-                        <div class="card text-center" style="width: 48%">
-                            <div class="card-header">Bico</div>
-                            <div class="card-body">
-                                <h3 id="nozzle-temp">--</h3>
-                                <span>°C</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Tempo Decorrido</div>
-                                <div class="card-body">
-                                    <h4 id="print-time">--</h4>
-                                    <span>minutos</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">Tempo Restante</div>
-                                <div class="card-body">
-                                    <h4 id="time-left">--</h4>
-                                    <span>minutos</span>
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                            Temperatura da Base
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <span id="bed-temp">--</span> °C
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-thermometer-half fa-2x text-gray-300"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="temp-card card border-left-danger h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                            Temperatura do Bico
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <span id="nozzle-temp">--</span> °C
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-fire fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div id="no-data-message" class="alert alert-warning hidden">
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="card border-left-info h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                            Tempo Decorrido
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <span id="print-time">--</span> minutos
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-left-success h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            Tempo Restante
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <span id="time-left">--</span> minutos
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-hourglass-end fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="no-data-message" class="text-center py-5 hidden animate__animated animate__fadeIn">
+                <div class="alert alert-warning animate__animated animate__pulse">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
                     Nenhum dado disponível da impressora. Verifique se a impressora está enviando dados.
                 </div>
+                <img src="https://www.prusa3d.com/wp-content/themes/prusa-3d/img/slider/slider-original.jpg" 
+                     alt="Prusa Printer" class="img-fluid rounded mt-3" style="max-height: 200px;">
             </div>
         </div>
     </div>
 
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
     <script>
         // Elementos da interface
         const loginScreen = document.getElementById('login-screen');
@@ -154,18 +294,34 @@
         const logoutBtn = document.getElementById('logout-btn');
         const refreshBtn = document.getElementById('refresh-btn');
         const loginError = document.getElementById('login-error');
-        const loadingSpinner = document.getElementById('loading-spinner');
+        const loginSpinner = document.getElementById('login-spinner');
         const loginBtnText = document.getElementById('login-btn-text');
         const refreshSpinner = document.getElementById('refresh-spinner');
         const refreshText = document.getElementById('refresh-text');
         const printerData = document.getElementById('printer-data');
         const noDataMessage = document.getElementById('no-data-message');
         const statusMessage = document.getElementById('status-message');
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordField = document.getElementById('password');
 
         // Configurações
         const API_URL = 'https://ertickmthh.pythonanywhere.com/status';
         const REMEMBER_ME_KEY = 'prusa_remember_me';
         const CREDS_KEY = 'prusa_auth_creds';
+
+        // Toggle password visibility
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+            
+            // Adiciona animação
+            this.classList.add('animate__animated', 'animate__bounceIn');
+            setTimeout(() => {
+                this.classList.remove('animate__animated', 'animate__bounceIn');
+            }, 500);
+        });
 
         // Gerenciamento de credenciais
         function storeCredentials(username, password, remember) {
@@ -206,7 +362,6 @@
                 const creds = getStoredCredentials();
                 if (creds) {
                     document.getElementById('username').value = creds.username || '';
-                    // Não preenchemos a senha por segurança
                 }
             }
         }
@@ -214,11 +369,11 @@
         // Mostra/oculta elementos
         function showLoading(show) {
             if (show) {
-                loadingSpinner.style.display = 'inline-block';
-                loginBtnText.style.display = 'none';
+                loginSpinner.classList.remove('hidden');
+                loginBtnText.classList.add('hidden');
             } else {
-                loadingSpinner.style.display = 'none';
-                loginBtnText.style.display = 'inline-block';
+                loginSpinner.classList.add('hidden');
+                loginBtnText.classList.remove('hidden');
             }
         }
 
@@ -251,14 +406,25 @@
 
                 // Login bem-sucedido
                 storeCredentials(username, password, remember);
-                loginScreen.classList.add('hidden');
-                statusScreen.classList.remove('hidden');
-                await fetchStatus();
-                startAutoRefresh();
+                
+                // Animação de transição
+                loginScreen.classList.add('animate__fadeOut');
+                setTimeout(() => {
+                    loginScreen.classList.add('hidden');
+                    statusScreen.classList.remove('hidden');
+                    statusScreen.classList.add('animate__fadeIn');
+                    fetchStatus();
+                    startAutoRefresh();
+                }, 500);
+                
             } catch (error) {
                 console.error('Erro no login:', error);
                 loginError.textContent = error.message;
                 loginError.classList.remove('hidden');
+                loginError.classList.add('animate__headShake');
+                setTimeout(() => {
+                    loginError.classList.remove('animate__headShake');
+                }, 1000);
             } finally {
                 showLoading(false);
             }
@@ -267,9 +433,21 @@
         // Logout
         function handleLogout() {
             clearCredentials();
-            statusScreen.classList.add('hidden');
-            loginScreen.classList.remove('hidden');
-            stopAutoRefresh();
+            
+            // Animação de transição
+            statusScreen.classList.add('animate__fadeOut');
+            setTimeout(() => {
+                statusScreen.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+                loginScreen.classList.add('animate__fadeIn');
+                stopAutoRefresh();
+                
+                // Reset form
+                document.getElementById('password').value = '';
+                if (!document.getElementById('remember-me').checked) {
+                    document.getElementById('username').value = '';
+                }
+            }, 500);
         }
 
         // Atualizar status
@@ -310,6 +488,7 @@
                 printerData.classList.add('hidden');
                 statusMessage.classList.add('hidden');
                 noDataMessage.classList.remove('hidden');
+                noDataMessage.classList.add('animate__pulse');
                 return;
             }
 
@@ -326,10 +505,10 @@
             // Status
             document.getElementById('status-text').textContent = data.status;
             const statusAlert = document.getElementById('status-text');
-            statusAlert.className = 'alert ';
+            statusAlert.className = 'alert animate__animated animate__fadeIn ';
             
             if (data.status.toLowerCase().includes('error')) {
-                statusAlert.classList.add('alert-danger');
+                statusAlert.classList.add('alert-danger', 'pulse');
             } else if (data.status.toLowerCase().includes('printing')) {
                 statusAlert.classList.add('alert-primary');
             } else {
@@ -359,7 +538,7 @@
             
             const statusText = document.getElementById('status-text');
             statusText.textContent = message;
-            statusText.className = 'alert alert-danger';
+            statusText.className = 'alert alert-danger animate__animated animate__headShake';
         }
 
         // Auto-refresh
@@ -398,6 +577,10 @@
             if (!username || !password) {
                 loginError.textContent = 'Por favor, preencha usuário e senha';
                 loginError.classList.remove('hidden');
+                loginError.classList.add('animate__headShake');
+                setTimeout(() => {
+                    loginError.classList.remove('animate__headShake');
+                }, 1000);
                 return;
             }
             
