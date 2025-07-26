@@ -6,6 +6,7 @@
     <title>Monitoramento Prusa MK3S+</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -122,6 +123,31 @@
         .form-check-input:checked {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
+        }
+        
+        /* Printer status indicators */
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-printing {
+            background-color: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+        
+        .status-ready {
+            background-color: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+        
+        .status-error {
+            background-color: var(--danger-color);
+            box-shadow: 0 0 10px var(--danger-color);
+            animation: pulse 1.5s infinite;
         }
     </style>
 </head>
@@ -283,10 +309,10 @@
         </div>
     </div>
 
-    <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    
     <script>
+        // Configurações
+        const API_URL = 'http://localhost:5000/status'; // Altere para sua URL
+        
         // Elementos da interface
         const loginScreen = document.getElementById('login-screen');
         const statusScreen = document.getElementById('status-screen');
@@ -304,10 +330,10 @@
         const togglePassword = document.getElementById('togglePassword');
         const passwordField = document.getElementById('password');
 
-        // Configurações
-        const API_URL = 'https://ertickmthh.pythonanywhere.com/status';
+        // Configurações de armazenamento
         const REMEMBER_ME_KEY = 'prusa_remember_me';
         const CREDS_KEY = 'prusa_auth_creds';
+        let refreshInterval;
 
         // Toggle password visibility
         togglePassword.addEventListener('click', function() {
@@ -316,7 +342,6 @@
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
             
-            // Adiciona animação
             this.classList.add('animate__animated', 'animate__bounceIn');
             setTimeout(() => {
                 this.classList.remove('animate__animated', 'animate__bounceIn');
@@ -395,7 +420,11 @@
             try {
                 const authHeader = 'Basic ' + btoa(username + ':' + password);
                 const response = await fetch(API_URL, {
-                    headers: { 'Authorization': authHeader }
+                    headers: { 
+                        'Authorization': authHeader,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -404,10 +433,8 @@
                         `Erro na requisição: ${response.status}`);
                 }
 
-                // Login bem-sucedido
                 storeCredentials(username, password, remember);
                 
-                // Animação de transição
                 loginScreen.classList.add('animate__fadeOut');
                 setTimeout(() => {
                     loginScreen.classList.add('hidden');
@@ -434,7 +461,6 @@
         function handleLogout() {
             clearCredentials();
             
-            // Animação de transição
             statusScreen.classList.add('animate__fadeOut');
             setTimeout(() => {
                 statusScreen.classList.add('hidden');
@@ -442,7 +468,6 @@
                 loginScreen.classList.add('animate__fadeIn');
                 stopAutoRefresh();
                 
-                // Reset form
                 document.getElementById('password').value = '';
                 if (!document.getElementById('remember-me').checked) {
                     document.getElementById('username').value = '';
@@ -458,7 +483,11 @@
             try {
                 const authHeader = 'Basic ' + btoa(creds.username + ':' + creds.password);
                 const response = await fetch(API_URL, {
-                    headers: { 'Authorization': authHeader }
+                    headers: { 
+                        'Authorization': authHeader,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -497,22 +526,23 @@
                 return;
             }
 
-            // Mostra os dados
             noDataMessage.classList.add('hidden');
             printerData.classList.remove('hidden');
             statusMessage.classList.remove('hidden');
 
             // Status
-            document.getElementById('status-text').textContent = data.status;
-            const statusAlert = document.getElementById('status-text');
-            statusAlert.className = 'alert animate__animated animate__fadeIn ';
+            const statusText = document.getElementById('status-text');
+            statusText.innerHTML = `<span class="status-indicator status-${data.status.toLowerCase().includes('error') ? 'error' : 
+                                   data.status.toLowerCase().includes('printing') ? 'printing' : 'ready'}"></span>${data.status}`;
+            
+            statusText.className = 'alert animate__animated animate__fadeIn ';
             
             if (data.status.toLowerCase().includes('error')) {
-                statusAlert.classList.add('alert-danger', 'pulse');
+                statusText.classList.add('alert-danger');
             } else if (data.status.toLowerCase().includes('printing')) {
-                statusAlert.classList.add('alert-primary');
+                statusText.classList.add('alert-primary');
             } else {
-                statusAlert.classList.add('alert-success');
+                statusText.classList.add('alert-success');
             }
 
             // Progresso
@@ -520,6 +550,7 @@
             const progressBar = document.getElementById('progress-bar');
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${progress.toFixed(1)}%`;
+            progressBar.className = `progress-bar ${progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success'}`;
             document.getElementById('progress-text').textContent = `${progress.toFixed(1)}% concluído`;
 
             // Temperaturas
@@ -537,15 +568,14 @@
             statusMessage.classList.remove('hidden');
             
             const statusText = document.getElementById('status-text');
-            statusText.textContent = message;
+            statusText.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
             statusText.className = 'alert alert-danger animate__animated animate__headShake';
         }
 
         // Auto-refresh
-        let refreshInterval;
         function startAutoRefresh() {
             stopAutoRefresh();
-            refreshInterval = setInterval(fetchStatus, 30000); // 30 segundos
+            refreshInterval = setInterval(fetchStatus, 10000); // 10 segundos
         }
 
         function stopAutoRefresh() {
@@ -558,7 +588,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkRememberMe();
             
-            // Verifica se já está logado
             const creds = getStoredCredentials();
             if (creds) {
                 loginScreen.classList.add('hidden');
