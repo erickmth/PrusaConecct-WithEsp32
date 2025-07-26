@@ -240,290 +240,290 @@
     </div>
 
     <script>
-        // Configuration
-        const API_URL = 'https://ertickmthh.pythonanywhere.com/status';
-        const REMEMBER_ME_KEY = 'prusa_remember_me';
-        const CREDS_KEY = 'prusa_auth_creds';
-        
-        // DOM Elements
-        const elements = {
-            loginScreen: document.getElementById('login-screen'),
-            statusScreen: document.getElementById('status-screen'),
-            loginForm: document.getElementById('login-form'),
-            loginError: document.getElementById('login-error'),
-            loginSpinner: document.getElementById('login-spinner'),
-            loginBtnText: document.getElementById('login-btn-text'),
-            refreshBtn: document.getElementById('refresh-btn'),
-            refreshSpinner: document.getElementById('refresh-spinner'),
-            refreshText: document.getElementById('refresh-text'),
-            logoutBtn: document.getElementById('logout-btn'),
-            printerData: document.getElementById('printer-data'),
-            noDataMessage: document.getElementById('no-data-message'),
-            statusMessage: document.getElementById('status-message'),
-            statusText: document.getElementById('status-text'),
-            togglePassword: document.getElementById('togglePassword'),
-            passwordField: document.getElementById('password'),
-            lastUpdate: document.getElementById('last-update'),
-            progressBar: document.getElementById('progress-bar'),
-            progressText: document.getElementById('progress-text'),
-            bedTemp: document.getElementById('bed-temp'),
-            nozzleTemp: document.getElementById('nozzle-temp'),
-            printTime: document.getElementById('print-time'),
-            timeLeft: document.getElementById('time-left'),
-            username: document.getElementById('username'),
-            password: document.getElementById('password'),
-            rememberMe: document.getElementById('remember-me')
-        };
 
-        // State
-        let refreshInterval;
+const API_BASE_URL = 'https://ertickmthh.pythonanywhere.com';
+const API_URL = `${API_BASE_URL}/status`;
+const REMEMBER_ME_KEY = 'prusa_remember_me';
+const CREDS_KEY = 'prusa_auth_creds';
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            checkRememberMe();
-            setupEventListeners();
-            
-            const creds = getStoredCredentials();
-            if (creds) {
-                switchToStatusScreen();
-                fetchStatus();
-                startAutoRefresh();
-            } else {
-                switchToLoginScreen();
-            }
+// Elementos da interface
+const elements = {
+    loginScreen: document.getElementById('login-screen'),
+    statusScreen: document.getElementById('status-screen'),
+    loginForm: document.getElementById('login-form'),
+    loginError: document.getElementById('login-error'),
+    loginSpinner: document.getElementById('login-spinner'),
+    loginBtnText: document.getElementById('login-btn-text'),
+    refreshBtn: document.getElementById('refresh-btn'),
+    refreshSpinner: document.getElementById('refresh-spinner'),
+    refreshText: document.getElementById('refresh-text'),
+    logoutBtn: document.getElementById('logout-btn'),
+    printerData: document.getElementById('printer-data'),
+    noDataMessage: document.getElementById('no-data-message'),
+    statusMessage: document.getElementById('status-message'),
+    statusText: document.getElementById('status-text'),
+    togglePassword: document.getElementById('togglePassword'),
+    passwordField: document.getElementById('password'),
+    lastUpdate: document.getElementById('last-update'),
+    progressBar: document.getElementById('progress-bar'),
+    progressText: document.getElementById('progress-text'),
+    bedTemp: document.getElementById('bed-temp'),
+    nozzleTemp: document.getElementById('nozzle-temp'),
+    printTime: document.getElementById('print-time'),
+    timeLeft: document.getElementById('time-left'),
+    username: document.getElementById('username'),
+    password: document.getElementById('password'),
+    rememberMe: document.getElementById('remember-me')
+};
+
+// Estado
+let refreshInterval;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    checkRememberMe();
+    setupEventListeners();
+    
+    const creds = getStoredCredentials();
+    if (creds) {
+        switchToStatusScreen();
+        fetchStatus();
+    }
+});
+
+// Configura listeners
+function setupEventListeners() {
+    elements.togglePassword.addEventListener('click', togglePasswordVisibility);
+    elements.loginForm.addEventListener('submit', handleLoginSubmit);
+    elements.logoutBtn.addEventListener('click', handleLogout);
+    elements.refreshBtn.addEventListener('click', fetchStatus);
+}
+
+// Alternar visibilidade da senha
+function togglePasswordVisibility() {
+    const type = elements.passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+    elements.passwordField.setAttribute('type', type);
+    this.classList.toggle('fa-eye');
+    this.classList.toggle('fa-eye-slash');
+}
+
+// Gerenciamento de credenciais
+function storeCredentials(username, password, remember) {
+    if (remember) {
+        localStorage.setItem(CREDS_KEY, JSON.stringify({ username, password }));
+        localStorage.setItem(REMEMBER_ME_KEY, 'true');
+    }
+}
+
+function clearCredentials() {
+    localStorage.removeItem(CREDS_KEY);
+    localStorage.removeItem(REMEMBER_ME_KEY);
+}
+
+function getStoredCredentials() {
+    const credsJson = localStorage.getItem(CREDS_KEY);
+    return credsJson ? JSON.parse(credsJson) : null;
+}
+
+function checkRememberMe() {
+    const remember = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+    elements.rememberMe.checked = remember;
+    if (remember) {
+        const creds = getStoredCredentials();
+        if (creds) {
+            elements.username.value = creds.username || '';
+        }
+    }
+}
+
+// Controles de UI
+function showLoading(show) {
+    elements.loginSpinner.classList.toggle('hidden', !show);
+    elements.loginBtnText.classList.toggle('hidden', show);
+}
+
+function showRefreshLoading(show) {
+    elements.refreshSpinner.classList.toggle('hidden', !show);
+    elements.refreshText.classList.toggle('hidden', show);
+}
+
+function showError(message) {
+    elements.loginError.textContent = message;
+    elements.loginError.classList.remove('hidden');
+    elements.loginError.classList.add('animate__animated', 'animate__headShake');
+    setTimeout(() => {
+        elements.loginError.classList.remove('animate__animated', 'animate__headShake');
+    }, 1000);
+}
+
+function switchToLoginScreen() {
+    elements.statusScreen.classList.add('hidden');
+    elements.loginScreen.classList.remove('hidden');
+    stopAutoRefresh();
+}
+
+function switchToStatusScreen() {
+    elements.loginScreen.classList.add('hidden');
+    elements.statusScreen.classList.remove('hidden');
+    startAutoRefresh();
+}
+
+// Autenticação
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    const username = elements.username.value.trim();
+    const password = elements.password.value;
+    const remember = elements.rememberMe.checked;
+
+    if (!username || !password) {
+        showError('Por favor, preencha usuário e senha');
+        return;
+    }
+
+    showLoading(true);
+    elements.loginError.classList.add('hidden');
+
+    try {
+        const authHeader = 'Basic ' + btoa(username + ':' + password);
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: { 
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
         });
 
-        // Event Listeners
-        function setupEventListeners() {
-            elements.togglePassword.addEventListener('click', togglePasswordVisibility);
-            elements.loginForm.addEventListener('submit', handleLoginSubmit);
-            elements.logoutBtn.addEventListener('click', handleLogout);
-            elements.refreshBtn.addEventListener('click', fetchStatus);
+        if (!response.ok) {
+            throw new Error(response.status === 401 ? 
+                'Usuário ou senha incorretos' : 
+                `Erro na requisição: ${response.status}`);
         }
 
-        // Password visibility toggle
-        function togglePasswordVisibility() {
-            const type = elements.passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            elements.passwordField.setAttribute('type', type);
-            this.classList.toggle('fa-eye');
-            this.classList.toggle('fa-eye-slash');
-        }
+        storeCredentials(username, password, remember);
+        switchToStatusScreen();
+        fetchStatus();
+    } catch (error) {
+        console.error('Login error:', error);
+        showError(error.message);
+    } finally {
+        showLoading(false);
+    }
+}
 
-        // Credential management
-        function storeCredentials(username, password, remember) {
-            if (remember) {
-                localStorage.setItem(CREDS_KEY, JSON.stringify({ username, password }));
-                localStorage.setItem(REMEMBER_ME_KEY, 'true');
+function handleLogout() {
+    clearCredentials();
+    elements.password.value = '';
+    if (!elements.rememberMe.checked) {
+        elements.username.value = '';
+    }
+    switchToLoginScreen();
+}
+
+// Atualização de status
+async function fetchStatus() {
+    showRefreshLoading(true);
+    const creds = getStoredCredentials();
+    
+    try {
+        const authHeader = 'Basic ' + btoa(creds.username + ':' + creds.password);
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: { 
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                handleLogout();
+                throw new Error('Sessão expirada. Por favor, faça login novamente.');
             }
+            throw new Error(`Erro HTTP: ${response.status}`);
         }
 
-        function clearCredentials() {
-            localStorage.removeItem(CREDS_KEY);
-            localStorage.removeItem(REMEMBER_ME_KEY);
-        }
+        const data = await response.json();
+        updateUI(data);
+    } catch (error) {
+        console.error('Status fetch error:', error);
+        showStatusError(error.message || 'Falha na conexão com o servidor');
+    } finally {
+        showRefreshLoading(false);
+    }
+}
 
-        function getStoredCredentials() {
-            const credsJson = localStorage.getItem(CREDS_KEY);
-            return credsJson ? JSON.parse(credsJson) : null;
-        }
+function updateUI(data) {
+    elements.lastUpdate.textContent = `Última atualização: ${new Date().toLocaleString()}`;
 
-        function checkRememberMe() {
-            const remember = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
-            elements.rememberMe.checked = remember;
-            if (remember) {
-                const creds = getStoredCredentials();
-                if (creds) {
-                    elements.username.value = creds.username || '';
-                }
-            }
-        }
+    if (data.message && data.message === "Nenhum dado disponível") {
+        elements.printerData.classList.add('hidden');
+        elements.noDataMessage.classList.remove('hidden');
+        elements.statusMessage.classList.add('hidden');
+        return;
+    }
 
-        // UI Helpers
-        function showLoading(show) {
-            elements.loginSpinner.classList.toggle('hidden', !show);
-            elements.loginBtnText.classList.toggle('hidden', show);
-        }
+    if (!data.status) {
+        showStatusError('Dados inválidos recebidos');
+        return;
+    }
 
-        function showRefreshLoading(show) {
-            elements.refreshSpinner.classList.toggle('hidden', !show);
-            elements.refreshText.classList.toggle('hidden', show);
-        }
+    // Mostrar dados
+    elements.noDataMessage.classList.add('hidden');
+    elements.printerData.classList.remove('hidden');
+    elements.statusMessage.classList.remove('hidden');
 
-        function showError(message) {
-            elements.loginError.textContent = message;
-            elements.loginError.classList.remove('hidden');
-            elements.loginError.classList.add('animate__animated', 'animate__headShake');
-            setTimeout(() => {
-                elements.loginError.classList.remove('animate__animated', 'animate__headShake');
-            }, 1000);
-        }
+    // Atualizar status
+    elements.statusText.textContent = data.status;
+    updateStatusAlertClass(data.status);
 
-        function switchToLoginScreen() {
-            elements.statusScreen.classList.add('hidden');
-            elements.loginScreen.classList.remove('hidden');
-            stopAutoRefresh();
-        }
+    // Atualizar progresso
+    const progress = parseFloat(data.progress || 0);
+    elements.progressBar.style.width = `${progress}%`;
+    elements.progressBar.textContent = `${progress.toFixed(1)}%`;
+    elements.progressText.textContent = `${progress.toFixed(1)}% concluído`;
 
-        function switchToStatusScreen() {
-            elements.loginScreen.classList.add('hidden');
-            elements.statusScreen.classList.remove('hidden');
-            startAutoRefresh();
-        }
+    // Atualizar temperaturas
+    elements.bedTemp.textContent = data.bed_temp || '--';
+    elements.nozzleTemp.textContent = data.nozzle_temp || '--';
 
-        // Authentication
-        async function handleLoginSubmit(e) {
-            e.preventDefault();
-            const username = elements.username.value.trim();
-            const password = elements.password.value;
-            const remember = elements.rememberMe.checked;
+    // Atualizar tempos
+    elements.printTime.textContent = data.print_time || '--';
+    elements.timeLeft.textContent = data.time_left || '--';
+}
 
-            if (!username || !password) {
-                showError('Por favor, preencha usuário e senha');
-                return;
-            }
+function updateStatusAlertClass(status) {
+    elements.statusText.className = 'alert status-alert animate__animated animate__fadeIn';
+    
+    if (status.toLowerCase().includes('error')) {
+        elements.statusText.classList.add('alert-danger');
+    } else if (status.toLowerCase().includes('printing')) {
+        elements.statusText.classList.add('alert-primary');
+    } else {
+        elements.statusText.classList.add('alert-success');
+    }
+}
 
-            showLoading(true);
-            elements.loginError.classList.add('hidden');
+function showStatusError(message) {
+    elements.printerData.classList.add('hidden');
+    elements.noDataMessage.classList.add('hidden');
+    elements.statusMessage.classList.remove('hidden');
+    elements.statusText.textContent = message;
+    elements.statusText.className = 'alert alert-danger animate__animated animate__headShake';
+}
 
-            try {
-                const authHeader = 'Basic ' + btoa(username + ':' + password);
-                const response = await fetch(API_URL, {
-                    headers: { 
-                        'Authorization': authHeader,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
+// Auto-refresh
+function startAutoRefresh() {
+    stopAutoRefresh();
+    refreshInterval = setInterval(fetchStatus, 30000); // 30 segundos
+}
 
-                if (!response.ok) {
-                    throw new Error(response.status === 401 ? 
-                        'Usuário ou senha incorretos' : 
-                        `Erro na requisição: ${response.status}`);
-                }
-
-                storeCredentials(username, password, remember);
-                switchToStatusScreen();
-                fetchStatus();
-            } catch (error) {
-                console.error('Login error:', error);
-                showError(error.message);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function handleLogout() {
-            clearCredentials();
-            elements.password.value = '';
-            if (!elements.rememberMe.checked) {
-                elements.username.value = '';
-            }
-            switchToLoginScreen();
-        }
-
-        // Printer Status
-        async function fetchStatus() {
-            showRefreshLoading(true);
-            const creds = getStoredCredentials();
-            
-            try {
-                const authHeader = 'Basic ' + btoa(creds.username + ':' + creds.password);
-                const response = await fetch(API_URL, {
-                    headers: { 
-                        'Authorization': authHeader,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        handleLogout();
-                        throw new Error('Sessão expirada. Por favor, faça login novamente.');
-                    }
-                    throw new Error(`Erro HTTP: ${response.status}`);
-                }
-
-                const data = await response.json();
-                updateUI(data);
-            } catch (error) {
-                console.error('Status fetch error:', error);
-                showStatusError(error.message || 'Falha na conexão com o servidor');
-            } finally {
-                showRefreshLoading(false);
-            }
-        }
-
-        function updateUI(data) {
-            elements.lastUpdate.textContent = `Última atualização: ${new Date().toLocaleString()}`;
-
-            if (data.message && data.message === "Nenhum dado disponível") {
-                elements.printerData.classList.add('hidden');
-                elements.noDataMessage.classList.remove('hidden');
-                elements.statusMessage.classList.add('hidden');
-                return;
-            }
-
-            if (!data.status) {
-                showStatusError('Dados inválidos recebidos');
-                return;
-            }
-
-            // Show printer data
-            elements.noDataMessage.classList.add('hidden');
-            elements.printerData.classList.remove('hidden');
-            elements.statusMessage.classList.remove('hidden');
-
-            // Update status
-            elements.statusText.textContent = data.status;
-            updateStatusAlertClass(data.status);
-
-            // Update progress
-            const progress = parseFloat(data.progress || 0);
-            elements.progressBar.style.width = `${progress}%`;
-            elements.progressBar.textContent = `${progress.toFixed(1)}%`;
-            elements.progressText.textContent = `${progress.toFixed(1)}% concluído`;
-
-            // Update temperatures
-            elements.bedTemp.textContent = data.bed_temp || '--';
-            elements.nozzleTemp.textContent = data.nozzle_temp || '--';
-
-            // Update times
-            elements.printTime.textContent = data.print_time || '--';
-            elements.timeLeft.textContent = data.time_left || '--';
-        }
-
-        function updateStatusAlertClass(status) {
-            elements.statusText.className = 'alert status-alert animate__animated animate__fadeIn';
-            
-            if (status.toLowerCase().includes('error')) {
-                elements.statusText.classList.add('alert-danger');
-            } else if (status.toLowerCase().includes('printing')) {
-                elements.statusText.classList.add('alert-primary');
-            } else {
-                elements.statusText.classList.add('alert-success');
-            }
-        }
-
-        function showStatusError(message) {
-            elements.printerData.classList.add('hidden');
-            elements.noDataMessage.classList.add('hidden');
-            elements.statusMessage.classList.remove('hidden');
-            elements.statusText.textContent = message;
-            elements.statusText.className = 'alert alert-danger animate__animated animate__headShake';
-        }
-
-        // Auto-refresh
-        function startAutoRefresh() {
-            stopAutoRefresh();
-            refreshInterval = setInterval(fetchStatus, 30000); // 30 seconds
-        }
-
-        function stopAutoRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-        }
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
     </script>
 </body>
 </html>
