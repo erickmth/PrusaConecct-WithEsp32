@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento Prusa MK3S+</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .status-card {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .progress {
+            height: 25px;
+            margin: 10px 0;
+        }
+        .temp-display {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tela de Login -->
+        <div id="login-screen" class="status-card text-center">
+            <h2 class="mb-4">Monitoramento Prusa MK3S+</h2>
+            <div class="mb-3">
+                <input type="text" id="username" class="form-control" placeholder="Usuário" value="inrb">
+            </div>
+            <div class="mb-3">
+                <input type="password" id="password" class="form-control" placeholder="Senha" value="Formare2025">
+            </div>
+            <button id="login-btn" class="btn btn-primary">Entrar</button>
+        </div>
+
+        <!-- Tela de Status -->
+        <div id="status-screen" class="hidden">
+            <div class="status-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Status da Impressora</h2>
+                    <div>
+                        <button id="refresh-btn" class="btn btn-sm btn-outline-primary">Atualizar</button>
+                        <button id="logout-btn" class="btn btn-sm btn-outline-danger">Sair</button>
+                    </div>
+                </div>
+                
+                <div id="last-update" class="text-muted mb-3"></div>
+                
+                <div class="alert" id="status-text"></div>
+                
+                <div id="progress-container">
+                    <div class="progress">
+                        <div id="progress-bar" class="progress-bar" role="progressbar"></div>
+                    </div>
+                    <div class="text-center" id="progress-text"></div>
+                </div>
+                
+                <div class="temp-display">
+                    <div class="card text-center" style="width: 48%">
+                        <div class="card-header">Base</div>
+                        <div class="card-body">
+                            <h3 id="bed-temp">--</h3>
+                            <span>°C</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card text-center" style="width: 48%">
+                        <div class="card-header">Bico</div>
+                        <div class="card-body">
+                            <h3 id="nozzle-temp">--</h3>
+                            <span>°C</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">Tempo Decorrido</div>
+                            <div class="card-body">
+                                <h4 id="print-time">--</h4>
+                                <span>minutos</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">Tempo Restante</div>
+                            <div class="card-body">
+                                <h4 id="time-left">--</h4>
+                                <span>minutos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elementos da interface
+        const loginScreen = document.getElementById('login-screen');
+        const statusScreen = document.getElementById('status-screen');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        
+        // Armazenamento de credenciais
+        function storeCredentials(username, password) {
+            localStorage.setItem('prusa_username', username);
+            localStorage.setItem('prusa_password', password);
+        }
+        
+        function clearCredentials() {
+            localStorage.removeItem('prusa_username');
+            localStorage.removeItem('prusa_password');
+        }
+        
+        function getCredentials() {
+            return {
+                username: localStorage.getItem('prusa_username'),
+                password: localStorage.getItem('prusa_password')
+            };
+        }
+        
+        // Verifica se já está logado
+        function checkLoggedIn() {
+            const creds = getCredentials();
+            if (creds.username && creds.password) {
+                loginScreen.classList.add('hidden');
+                statusScreen.classList.remove('hidden');
+                fetchStatus();
+                startAutoRefresh();
+                return true;
+            }
+            return false;
+        }
+        
+        // Login
+        loginBtn.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                alert('Por favor, preencha usuário e senha');
+                return;
+            }
+            
+            storeCredentials(username, password);
+            if (checkLoggedIn()) {
+                // Sucesso
+            } else {
+                alert('Credenciais inválidas');
+                clearCredentials();
+            }
+        });
+        
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            clearCredentials();
+            statusScreen.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            stopAutoRefresh();
+        });
+        
+        // Atualizar status
+        refreshBtn.addEventListener('click', fetchStatus);
+        
+        // Auto-refresh
+        let refreshInterval;
+        function startAutoRefresh() {
+            refreshInterval = setInterval(fetchStatus, 30000); // 30 segundos
+        }
+        
+        function stopAutoRefresh() {
+            clearInterval(refreshInterval);
+        }
+        
+        // Busca o status da impressora
+        async function fetchStatus() {
+            const creds = getCredentials();
+            const authHeader = 'Basic ' + btoa(creds.username + ':' + creds.password);
+            
+            try {
+                const response = await fetch('https://ertickmthh.pythonanywhere.com/status', {
+                    headers: {
+                        'Authorization': authHeader
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('Acesso não autorizado. Por favor, faça login novamente.');
+                        logoutBtn.click();
+                    }
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Erro ao buscar status:', error);
+                document.getElementById('status-text').textContent = 'Erro ao buscar status';
+                document.getElementById('status-text').className = 'alert alert-danger';
+            }
+        }
+        
+        // Atualiza a interface com os dados recebidos
+        function updateUI(data) {
+            if (data.message && data.message === "Nenhum dado disponível") {
+                document.getElementById('status-text').textContent = 'Nenhum dado disponível da impressora';
+                document.getElementById('status-text').className = 'alert alert-warning';
+                return;
+            }
+            
+            // Atualiza os campos
+            document.getElementById('last-update').textContent = `Última atualização: ${new Date().toLocaleString()}`;
+            document.getElementById('status-text').textContent = data.status;
+            
+            // Define a cor do status
+            const statusAlert = document.getElementById('status-text');
+            statusAlert.className = 'alert ';
+            if (data.status.toLowerCase().includes('error')) {
+                statusAlert.classList.add('alert-danger');
+            } else if (data.status.toLowerCase().includes('printing')) {
+                statusAlert.classList.add('alert-primary');
+            } else {
+                statusAlert.classList.add('alert-success');
+            }
+            
+            // Progresso
+            const progress = parseFloat(data.progress);
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-bar').textContent = `${progress.toFixed(1)}%`;
+            document.getElementById('progress-text').textContent = `${progress.toFixed(1)}% concluído`;
+            
+            // Temperaturas
+            document.getElementById('bed-temp').textContent = data.bed_temp;
+            document.getElementById('nozzle-temp').textContent = data.nozzle_temp;
+            
+            // Tempos
+            document.getElementById('print-time').textContent = data.print_time;
+            document.getElementById('time-left').textContent = data.time_left;
+        }
+        
+        // Verifica login ao carregar a página
+        document.addEventListener('DOMContentLoaded', checkLoggedIn);
+    </script>
+</body>
+</html>
