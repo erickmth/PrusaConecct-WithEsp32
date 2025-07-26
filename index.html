@@ -6,7 +6,7 @@
     <title>Monitoramento Prusa MK3S+</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #4e73df;
@@ -24,7 +24,6 @@
             flex-direction: column;
         }
         
-        /* Login Screen */
         .login-container {
             max-width: 400px;
             margin: auto;
@@ -51,20 +50,11 @@
             transition: all 0.3s;
         }
         
-        .toggle-password:hover {
-            color: var(--primary-color);
-        }
-        
-        /* Status Screen */
         .status-card {
             border: none;
             border-radius: 0.5rem;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
             transition: all 0.3s;
-        }
-        
-        .status-card:hover {
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.2);
         }
         
         .progress {
@@ -78,89 +68,29 @@
             transition: transform 0.3s;
         }
         
-        .temp-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        /* Animations */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(1rem);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(1rem); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .fade-in {
-            animation: fadeIn 0.5s forwards;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        /* Pulse animation for status */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        /* Hidden class */
         .hidden {
             display: none !important;
         }
         
-        /* Custom checkbox */
-        .form-check-input:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        /* Printer status indicators */
-        .status-indicator {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        
-        .status-printing {
-            background-color: var(--primary-color);
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-        
-        .status-ready {
-            background-color: var(--success-color);
-            box-shadow: 0 0 10px var(--success-color);
-        }
-        
-        .status-error {
-            background-color: var(--danger-color);
-            box-shadow: 0 0 10px var(--danger-color);
-            animation: pulse 1.5s infinite;
+        .status-alert {
+            transition: all 0.3s;
         }
     </style>
 </head>
 <body>
-    <!-- Tela de Login -->
     <div id="login-screen" class="container d-flex flex-column justify-content-center" style="height: 100vh;">
-        <div class="login-container animate__animated animate__fadeIn">
+        <div class="login-container">
             <div class="text-center mb-4">
                 <img src="https://www.prusa3d.com/wp-content/themes/prusa-3d/img/prusa-logo.svg" alt="Prusa Logo" style="height: 50px;" class="mb-3">
                 <h2 class="h4 text-gray-900">Monitoramento Prusa MK3S+</h2>
             </div>
             
-            <div id="login-error" class="alert alert-danger hidden animate__animated animate__headShake" role="alert"></div>
+            <div id="login-error" class="alert alert-danger hidden" role="alert"></div>
             
             <form id="login-form" class="user">
                 <div class="mb-3">
@@ -184,8 +114,7 @@
         </div>
     </div>
 
-    <!-- Tela de Status -->
-    <div id="status-screen" class="container py-4 hidden animate__animated animate__fadeIn">
+    <div id="status-screen" class="container py-4 hidden">
         <div class="status-card bg-white p-4 mb-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -194,24 +123,25 @@
                 </div>
                 <div>
                     <button id="refresh-btn" class="btn btn-sm btn-outline-primary mr-2">
+                        <i class="fas fa-sync-alt mr-1"></i>
                         <span id="refresh-text">Atualizar</span>
                         <span id="refresh-spinner" class="spinner-border spinner-border-sm hidden" role="status"></span>
                     </button>
                     <button id="logout-btn" class="btn btn-sm btn-outline-danger">
-                        <i class="fas fa-sign-out-alt"></i> Sair
+                        <i class="fas fa-sign-out-alt mr-1"></i> Sair
                     </button>
                 </div>
             </div>
             
-            <div id="status-message" class="hidden animate__animated animate__fadeIn">
-                <div class="alert" id="status-text"></div>
+            <div id="status-message" class="mb-3 hidden">
+                <div class="alert status-alert" id="status-text"></div>
             </div>
             
-            <div id="printer-data" class="hidden animate__animated animate__fadeIn">
+            <div id="printer-data" class="hidden">
                 <div class="mb-4">
                     <h4 class="small font-weight-bold">Progresso da Impressão <span id="progress-text" class="float-right"></span></h4>
                     <div class="progress mb-3">
-                        <div id="progress-bar" class="progress-bar" role="progressbar"></div>
+                        <div id="progress-bar" class="progress-bar progress-bar-striped" role="progressbar"></div>
                     </div>
                 </div>
                 
@@ -298,10 +228,10 @@
                 </div>
             </div>
             
-            <div id="no-data-message" class="text-center py-5 hidden animate__animated animate__fadeIn">
-                <div class="alert alert-warning animate__animated animate__pulse">
+            <div id="no-data-message" class="text-center py-5 hidden">
+                <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Nenhum dado disponível da impressora. Verifique se a impressora está enviando dados.
+                    Nenhum dado disponível da impressora
                 </div>
                 <img src="https://www.prusa3d.com/wp-content/themes/prusa-3d/img/slider/slider-original.jpg" 
                      alt="Prusa Printer" class="img-fluid rounded mt-3" style="max-height: 200px;">
@@ -310,53 +240,80 @@
     </div>
 
     <script>
-        // Configurações
-        const API_URL = 'http://localhost:5000/status'; // Altere para sua URL
-        
-        // Elementos da interface
-        const loginScreen = document.getElementById('login-screen');
-        const statusScreen = document.getElementById('status-screen');
-        const loginForm = document.getElementById('login-form');
-        const logoutBtn = document.getElementById('logout-btn');
-        const refreshBtn = document.getElementById('refresh-btn');
-        const loginError = document.getElementById('login-error');
-        const loginSpinner = document.getElementById('login-spinner');
-        const loginBtnText = document.getElementById('login-btn-text');
-        const refreshSpinner = document.getElementById('refresh-spinner');
-        const refreshText = document.getElementById('refresh-text');
-        const printerData = document.getElementById('printer-data');
-        const noDataMessage = document.getElementById('no-data-message');
-        const statusMessage = document.getElementById('status-message');
-        const togglePassword = document.getElementById('togglePassword');
-        const passwordField = document.getElementById('password');
-
-        // Configurações de armazenamento
+        // Configuration
+        const API_URL = 'https://ertickmthh.pythonanywhere.com/status';
         const REMEMBER_ME_KEY = 'prusa_remember_me';
         const CREDS_KEY = 'prusa_auth_creds';
+        
+        // DOM Elements
+        const elements = {
+            loginScreen: document.getElementById('login-screen'),
+            statusScreen: document.getElementById('status-screen'),
+            loginForm: document.getElementById('login-form'),
+            loginError: document.getElementById('login-error'),
+            loginSpinner: document.getElementById('login-spinner'),
+            loginBtnText: document.getElementById('login-btn-text'),
+            refreshBtn: document.getElementById('refresh-btn'),
+            refreshSpinner: document.getElementById('refresh-spinner'),
+            refreshText: document.getElementById('refresh-text'),
+            logoutBtn: document.getElementById('logout-btn'),
+            printerData: document.getElementById('printer-data'),
+            noDataMessage: document.getElementById('no-data-message'),
+            statusMessage: document.getElementById('status-message'),
+            statusText: document.getElementById('status-text'),
+            togglePassword: document.getElementById('togglePassword'),
+            passwordField: document.getElementById('password'),
+            lastUpdate: document.getElementById('last-update'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            bedTemp: document.getElementById('bed-temp'),
+            nozzleTemp: document.getElementById('nozzle-temp'),
+            printTime: document.getElementById('print-time'),
+            timeLeft: document.getElementById('time-left'),
+            username: document.getElementById('username'),
+            password: document.getElementById('password'),
+            rememberMe: document.getElementById('remember-me')
+        };
+
+        // State
         let refreshInterval;
 
-        // Toggle password visibility
-        togglePassword.addEventListener('click', function() {
-            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordField.setAttribute('type', type);
-            this.classList.toggle('fa-eye');
-            this.classList.toggle('fa-eye-slash');
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkRememberMe();
+            setupEventListeners();
             
-            this.classList.add('animate__animated', 'animate__bounceIn');
-            setTimeout(() => {
-                this.classList.remove('animate__animated', 'animate__bounceIn');
-            }, 500);
+            const creds = getStoredCredentials();
+            if (creds) {
+                switchToStatusScreen();
+                fetchStatus();
+                startAutoRefresh();
+            } else {
+                switchToLoginScreen();
+            }
         });
 
-        // Gerenciamento de credenciais
+        // Event Listeners
+        function setupEventListeners() {
+            elements.togglePassword.addEventListener('click', togglePasswordVisibility);
+            elements.loginForm.addEventListener('submit', handleLoginSubmit);
+            elements.logoutBtn.addEventListener('click', handleLogout);
+            elements.refreshBtn.addEventListener('click', fetchStatus);
+        }
+
+        // Password visibility toggle
+        function togglePasswordVisibility() {
+            const type = elements.passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            elements.passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        }
+
+        // Credential management
         function storeCredentials(username, password, remember) {
             if (remember) {
-                const creds = { username, password };
-                localStorage.setItem(CREDS_KEY, JSON.stringify(creds));
+                localStorage.setItem(CREDS_KEY, JSON.stringify({ username, password }));
                 localStorage.setItem(REMEMBER_ME_KEY, 'true');
-            } else {
-                localStorage.removeItem(CREDS_KEY);
-                localStorage.removeItem(REMEMBER_ME_KEY);
             }
         }
 
@@ -366,56 +323,67 @@
         }
 
         function getStoredCredentials() {
-            const remember = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
             const credsJson = localStorage.getItem(CREDS_KEY);
-            
-            if (remember && credsJson) {
-                try {
-                    return JSON.parse(credsJson);
-                } catch {
-                    return null;
-                }
-            }
-            return null;
+            return credsJson ? JSON.parse(credsJson) : null;
         }
 
-        // Verifica login ao carregar a página
         function checkRememberMe() {
             const remember = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+            elements.rememberMe.checked = remember;
             if (remember) {
-                document.getElementById('remember-me').checked = true;
                 const creds = getStoredCredentials();
                 if (creds) {
-                    document.getElementById('username').value = creds.username || '';
+                    elements.username.value = creds.username || '';
                 }
             }
         }
 
-        // Mostra/oculta elementos
+        // UI Helpers
         function showLoading(show) {
-            if (show) {
-                loginSpinner.classList.remove('hidden');
-                loginBtnText.classList.add('hidden');
-            } else {
-                loginSpinner.classList.add('hidden');
-                loginBtnText.classList.remove('hidden');
-            }
+            elements.loginSpinner.classList.toggle('hidden', !show);
+            elements.loginBtnText.classList.toggle('hidden', show);
         }
 
         function showRefreshLoading(show) {
-            if (show) {
-                refreshSpinner.classList.remove('hidden');
-                refreshText.classList.add('hidden');
-            } else {
-                refreshSpinner.classList.add('hidden');
-                refreshText.classList.remove('hidden');
-            }
+            elements.refreshSpinner.classList.toggle('hidden', !show);
+            elements.refreshText.classList.toggle('hidden', show);
         }
 
-        // Login
-        async function handleLogin(username, password, remember) {
+        function showError(message) {
+            elements.loginError.textContent = message;
+            elements.loginError.classList.remove('hidden');
+            elements.loginError.classList.add('animate__animated', 'animate__headShake');
+            setTimeout(() => {
+                elements.loginError.classList.remove('animate__animated', 'animate__headShake');
+            }, 1000);
+        }
+
+        function switchToLoginScreen() {
+            elements.statusScreen.classList.add('hidden');
+            elements.loginScreen.classList.remove('hidden');
+            stopAutoRefresh();
+        }
+
+        function switchToStatusScreen() {
+            elements.loginScreen.classList.add('hidden');
+            elements.statusScreen.classList.remove('hidden');
+            startAutoRefresh();
+        }
+
+        // Authentication
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const username = elements.username.value.trim();
+            const password = elements.password.value;
+            const remember = elements.rememberMe.checked;
+
+            if (!username || !password) {
+                showError('Por favor, preencha usuário e senha');
+                return;
+            }
+
             showLoading(true);
-            loginError.classList.add('hidden');
+            elements.loginError.classList.add('hidden');
 
             try {
                 const authHeader = 'Basic ' + btoa(username + ':' + password);
@@ -434,51 +402,29 @@
                 }
 
                 storeCredentials(username, password, remember);
-                
-                loginScreen.classList.add('animate__fadeOut');
-                setTimeout(() => {
-                    loginScreen.classList.add('hidden');
-                    statusScreen.classList.remove('hidden');
-                    statusScreen.classList.add('animate__fadeIn');
-                    fetchStatus();
-                    startAutoRefresh();
-                }, 500);
-                
+                switchToStatusScreen();
+                fetchStatus();
             } catch (error) {
-                console.error('Erro no login:', error);
-                loginError.textContent = error.message;
-                loginError.classList.remove('hidden');
-                loginError.classList.add('animate__headShake');
-                setTimeout(() => {
-                    loginError.classList.remove('animate__headShake');
-                }, 1000);
+                console.error('Login error:', error);
+                showError(error.message);
             } finally {
                 showLoading(false);
             }
         }
 
-        // Logout
         function handleLogout() {
             clearCredentials();
-            
-            statusScreen.classList.add('animate__fadeOut');
-            setTimeout(() => {
-                statusScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-                loginScreen.classList.add('animate__fadeIn');
-                stopAutoRefresh();
-                
-                document.getElementById('password').value = '';
-                if (!document.getElementById('remember-me').checked) {
-                    document.getElementById('username').value = '';
-                }
-            }, 500);
+            elements.password.value = '';
+            if (!elements.rememberMe.checked) {
+                elements.username.value = '';
+            }
+            switchToLoginScreen();
         }
 
-        // Atualizar status
+        // Printer Status
         async function fetchStatus() {
             showRefreshLoading(true);
-            const creds = getStoredCredentials() || {};
+            const creds = getStoredCredentials();
             
             try {
                 const authHeader = 'Basic ' + btoa(creds.username + ':' + creds.password);
@@ -501,81 +447,76 @@
                 const data = await response.json();
                 updateUI(data);
             } catch (error) {
-                console.error('Erro ao buscar status:', error);
-                showErrorStatus(error.message);
+                console.error('Status fetch error:', error);
+                showStatusError(error.message || 'Falha na conexão com o servidor');
             } finally {
                 showRefreshLoading(false);
             }
         }
 
-        // Atualiza a interface com os dados recebidos
         function updateUI(data) {
-            document.getElementById('last-update').textContent = 
-                `Última atualização: ${new Date().toLocaleString()}`;
+            elements.lastUpdate.textContent = `Última atualização: ${new Date().toLocaleString()}`;
 
             if (data.message && data.message === "Nenhum dado disponível") {
-                printerData.classList.add('hidden');
-                statusMessage.classList.add('hidden');
-                noDataMessage.classList.remove('hidden');
-                noDataMessage.classList.add('animate__pulse');
+                elements.printerData.classList.add('hidden');
+                elements.noDataMessage.classList.remove('hidden');
+                elements.statusMessage.classList.add('hidden');
                 return;
             }
 
             if (!data.status) {
-                showErrorStatus('Dados inválidos recebidos');
+                showStatusError('Dados inválidos recebidos');
                 return;
             }
 
-            noDataMessage.classList.add('hidden');
-            printerData.classList.remove('hidden');
-            statusMessage.classList.remove('hidden');
+            // Show printer data
+            elements.noDataMessage.classList.add('hidden');
+            elements.printerData.classList.remove('hidden');
+            elements.statusMessage.classList.remove('hidden');
 
-            // Status
-            const statusText = document.getElementById('status-text');
-            statusText.innerHTML = `<span class="status-indicator status-${data.status.toLowerCase().includes('error') ? 'error' : 
-                                   data.status.toLowerCase().includes('printing') ? 'printing' : 'ready'}"></span>${data.status}`;
-            
-            statusText.className = 'alert animate__animated animate__fadeIn ';
-            
-            if (data.status.toLowerCase().includes('error')) {
-                statusText.classList.add('alert-danger');
-            } else if (data.status.toLowerCase().includes('printing')) {
-                statusText.classList.add('alert-primary');
-            } else {
-                statusText.classList.add('alert-success');
-            }
+            // Update status
+            elements.statusText.textContent = data.status;
+            updateStatusAlertClass(data.status);
 
-            // Progresso
+            // Update progress
             const progress = parseFloat(data.progress || 0);
-            const progressBar = document.getElementById('progress-bar');
-            progressBar.style.width = `${progress}%`;
-            progressBar.textContent = `${progress.toFixed(1)}%`;
-            progressBar.className = `progress-bar ${progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success'}`;
-            document.getElementById('progress-text').textContent = `${progress.toFixed(1)}% concluído`;
+            elements.progressBar.style.width = `${progress}%`;
+            elements.progressBar.textContent = `${progress.toFixed(1)}%`;
+            elements.progressText.textContent = `${progress.toFixed(1)}% concluído`;
 
-            // Temperaturas
-            document.getElementById('bed-temp').textContent = data.bed_temp || '--';
-            document.getElementById('nozzle-temp').textContent = data.nozzle_temp || '--';
+            // Update temperatures
+            elements.bedTemp.textContent = data.bed_temp || '--';
+            elements.nozzleTemp.textContent = data.nozzle_temp || '--';
 
-            // Tempos
-            document.getElementById('print-time').textContent = data.print_time || '--';
-            document.getElementById('time-left').textContent = data.time_left || '--';
+            // Update times
+            elements.printTime.textContent = data.print_time || '--';
+            elements.timeLeft.textContent = data.time_left || '--';
         }
 
-        function showErrorStatus(message) {
-            printerData.classList.add('hidden');
-            noDataMessage.classList.add('hidden');
-            statusMessage.classList.remove('hidden');
+        function updateStatusAlertClass(status) {
+            elements.statusText.className = 'alert status-alert animate__animated animate__fadeIn';
             
-            const statusText = document.getElementById('status-text');
-            statusText.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
-            statusText.className = 'alert alert-danger animate__animated animate__headShake';
+            if (status.toLowerCase().includes('error')) {
+                elements.statusText.classList.add('alert-danger');
+            } else if (status.toLowerCase().includes('printing')) {
+                elements.statusText.classList.add('alert-primary');
+            } else {
+                elements.statusText.classList.add('alert-success');
+            }
+        }
+
+        function showStatusError(message) {
+            elements.printerData.classList.add('hidden');
+            elements.noDataMessage.classList.add('hidden');
+            elements.statusMessage.classList.remove('hidden');
+            elements.statusText.textContent = message;
+            elements.statusText.className = 'alert alert-danger animate__animated animate__headShake';
         }
 
         // Auto-refresh
         function startAutoRefresh() {
             stopAutoRefresh();
-            refreshInterval = setInterval(fetchStatus, 10000); // 10 segundos
+            refreshInterval = setInterval(fetchStatus, 30000); // 30 seconds
         }
 
         function stopAutoRefresh() {
@@ -583,41 +524,6 @@
                 clearInterval(refreshInterval);
             }
         }
-
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            checkRememberMe();
-            
-            const creds = getStoredCredentials();
-            if (creds) {
-                loginScreen.classList.add('hidden');
-                statusScreen.classList.remove('hidden');
-                fetchStatus();
-                startAutoRefresh();
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember-me').checked;
-            
-            if (!username || !password) {
-                loginError.textContent = 'Por favor, preencha usuário e senha';
-                loginError.classList.remove('hidden');
-                loginError.classList.add('animate__headShake');
-                setTimeout(() => {
-                    loginError.classList.remove('animate__headShake');
-                }, 1000);
-                return;
-            }
-            
-            await handleLogin(username, password, remember);
-        });
-
-        logoutBtn.addEventListener('click', handleLogout);
-        refreshBtn.addEventListener('click', fetchStatus);
     </script>
 </body>
 </html>
